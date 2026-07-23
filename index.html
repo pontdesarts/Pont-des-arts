@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#07192b">
+<title>Crown Cards Chess</title>
+<style>
+:root{--navy:#07192b;--navy2:#0c2943;--gold:#e9ba55;--cream:#efe5cb;--red:#7f2637;--green:#2b7458}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% 0,#173956 0,#07192b 42%,#030b15 100%);color:var(--cream);font-family:Georgia,"Times New Roman",serif}
+body{display:flex;justify-content:center;padding:12px 10px calc(24px + env(safe-area-inset-bottom));overflow-x:hidden}
+.app{width:min(100%,760px)}
+.ai-panel{position:relative;aspect-ratio:16/5.15;border:4px solid var(--gold);border-radius:22px;overflow:hidden;background:#061522;box-shadow:0 12px 30px #0009,inset 0 0 0 3px #183a54}
+.ai-panel::after{content:"";position:absolute;inset:5px;border:1px solid #f7d78566;border-radius:15px;pointer-events:none;z-index:4}
+.ai-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+#aiReaction{display:none;z-index:3;background:#061522}
+.ai-badge{position:absolute;left:12px;bottom:9px;z-index:5;padding:5px 10px;border-radius:999px;background:#03101dd9;border:1px solid #e9ba5588;color:#f6dda5;font-size:clamp(11px,2.4vw,15px);letter-spacing:.06em;text-transform:uppercase;box-shadow:0 3px 12px #0009}
+.controlbar{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin:10px 2px}
+.status{min-height:44px;display:flex;align-items:center;padding:8px 14px;border:1px solid #e9ba5566;border-radius:13px;background:#071828dd;box-shadow:inset 0 1px #ffffff12;font-size:clamp(14px,3.1vw,18px)}
+.restart{height:44px;border:1px solid #f2d48a;border-radius:12px;padding:0 15px;background:linear-gradient(#e9ba55,#a97527);color:#071421;font-weight:800;font-family:inherit;font-size:15px;box-shadow:0 5px 12px #0008;cursor:pointer}
+.restart:active{transform:translateY(1px)}
+.board-shell{position:relative;width:100%;aspect-ratio:1;border:clamp(7px,1.8vw,15px) solid #e9ba55;border-radius:18px;background:#d6bd78;box-shadow:0 17px 38px #000b,0 0 0 3px #17334b,inset 0 0 0 2px #f4dda0;overflow:hidden}
+.board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);background-image:url('https://crown-cards-chess.alexandr3.chatgpt.site/assets/board-frameless-muted.png');background-size:100% 100%;touch-action:manipulation}
+.square{position:relative;border:0;background:transparent;padding:0;cursor:pointer;display:grid;place-items:center;overflow:visible}
+.square.selected::before{content:"";position:absolute;inset:5%;border:3px solid #ffd96b;border-radius:10%;background:#f2c94c30;box-shadow:0 0 15px #ffd85d;z-index:1}
+.square.legal::after{content:"";position:absolute;width:24%;aspect-ratio:1;border-radius:50%;background:#f1c45dcc;box-shadow:0 0 10px #0008;z-index:1}
+.square.capture::after{content:"";position:absolute;inset:8%;border-radius:50%;border:4px solid #d34848d9;background:transparent;box-shadow:0 0 12px #a40000;z-index:1}
+.square.last{box-shadow:inset 0 0 0 5px #5ec8ff55}
+.piece{position:relative;z-index:2;width:91%;height:91%;object-fit:contain;filter:drop-shadow(0 5px 4px #0009);user-select:none;pointer-events:none}
+.fallback{position:relative;z-index:2;font-size:clamp(28px,10vw,72px);line-height:1;text-shadow:0 4px 4px #0009;pointer-events:none}
+.cards-label{text-align:center;margin:16px 0 8px;color:#d9c18d;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start}
+.card{position:relative;border:2px solid #d9ad50;border-radius:14px;padding:0;background:#071b2e;overflow:hidden;cursor:pointer;box-shadow:0 8px 20px #0009;transition:transform .15s,filter .15s,box-shadow .15s;aspect-ratio:.68}
+.card img{width:100%;height:100%;object-fit:cover;display:block}
+.card:active{transform:scale(.97)}
+.card.active{transform:translateY(-7px);box-shadow:0 0 0 3px #f8d77b,0 10px 25px #000,0 0 25px #e9ba55aa}
+.card.used{filter:grayscale(1) brightness(.45);cursor:default}
+.card.used::after{content:"USADA";position:absolute;inset:auto 8% 8%;padding:7px 2px;border-radius:7px;background:#061421e8;border:1px solid #d9ad50;color:#f2d996;font-weight:800;font-size:clamp(9px,2.4vw,13px);letter-spacing:.08em}
+.card.active::before{content:"ACTIVA";position:absolute;z-index:2;top:7px;left:50%;transform:translateX(-50%);padding:5px 9px;border-radius:999px;background:#e9ba55;color:#071421;font-weight:900;font-size:clamp(8px,2vw,11px);letter-spacing:.06em;box-shadow:0 3px 8px #0008}
+.help{text-align:center;margin:10px 6px 0;color:#b9b3a6;font:13px/1.35 Arial,sans-serif}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:30;max-width:90vw;padding:10px 15px;border:1px solid #e9ba55;border-radius:12px;background:#061421ed;color:#f4dfae;font:600 14px Arial,sans-serif;opacity:0;pointer-events:none;transition:.2s;box-shadow:0 8px 25px #000b;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:430px){body{padding:7px 6px 18px}.ai-panel{border-width:3px;border-radius:17px}.controlbar{margin:7px 0}.status{min-height:39px;padding:7px 10px}.restart{height:39px;padding:0 11px;font-size:13px}.board-shell{border-width:7px;border-radius:12px}.cards{gap:6px}.card{border-width:1.5px;border-radius:10px}.cards-label{margin-top:12px}}
+</style>
+</head>
+<body>
+<main class="app">
+  <section class="ai-panel" aria-label="Rival controlado por la IA">
+    <img id="aiIdle" class="ai-media" src="https://crown-cards-chess.alexandr3.chatgpt.site/assets/ai-portrait.png" alt="Rival controlado por la IA">
+    <video id="aiReaction" class="ai-media" playsinline preload="auto"></video>
+    <div class="ai-badge">Rival IA</div>
+  </section>
+  <div class="controlbar"><div id="status" class="status">Tu turno.</div><button id="restart" class="restart" type="button">Reiniciar</button></div>
+  <section class="board-shell" aria-label="Tablero de ajedrez"><div id="board" class="board"></div></section>
+  <div class="cards-label">Cartas de poder</div>
+  <section class="cards" aria-label="Cartas disponibles">
+    <button class="card" data-card="double" type="button" aria-label="Doble Galope"><img src="https://crown-cards-chess.alexandr3.chatgpt.site/assets/cards/doble-galope.png" alt="Doble Galope"></button>
+    <button class="card" data-card="pass" type="button" aria-label="Paso Prohibido"><img src="https://crown-cards-chess.alexandr3.chatgpt.site/assets/cards/paso-prohibido.png" alt="Paso Prohibido"></button>
+    <button class="card" data-card="shield" type="button" aria-label="Corona Blindada"><img src="https://crown-cards-chess.alexandr3.chatgpt.site/assets/cards/corona-blindada.png" alt="Corona Blindada"></button>
+  </section>
+  <p class="help">Toca una carta para activarla o mueve una pieza para jugar al ajedrez normal.</p>
+</main>
+<div id="toast" class="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script>
+const REACTIONS={aiLoses:'ai-loses.mp4',aiCaptures:'ai-captures.mp4'};
+const PIECE_BASE='https://crown-cards-chess.alexandr3.chatgpt.site/assets/pieces/';
+const glyphs={wp:'♙',wn:'♘',wb:'♗',wr:'♖',wq:'♕',wk:'♔',bp:'♟',bn:'♞',bb:'♝',br:'♜',bq:'♛',bk:'♚'};
+const values={p:100,n:320,b:330,r:500,q:900,k:20000};
+const game=new Chess();
+const boardEl=document.getElementById('board'),statusEl=document.getElementById('status'),toastEl=document.getElementById('toast'),aiIdle=document.getElementById('aiIdle'),aiVideo=document.getElementById('aiReaction'),cards=[...document.querySelectorAll('.card')];
+let selected=null,legalMoves=[],activeCard=null,usedCards=new Set(),aiThinking=false,lastMove=null,doubleStage=0,blockAiBishop=false,shieldFromCheck=false,reactionToken=0;
+function toast(msg){toastEl.textContent=msg;toastEl.classList.add('show');clearTimeout(toastEl._t);toastEl._t=setTimeout(()=>toastEl.classList.remove('show'),1800)}
+function forceTurn(color){const p=game.fen().split(' ');p[1]=color;game.load(p.join(' '))}
+function squareName(file,rank){return 'abcdefgh'[file]+(8-rank)}
+function pieceUrl(p){return PIECE_BASE+p.color+p.type+'.png'}
+function render(){boardEl.innerHTML='';for(let r=0;r<8;r++)for(let f=0;f<8;f++){const sq=squareName(f,r),piece=game.get(sq),btn=document.createElement('button');btn.type='button';btn.className='square';btn.dataset.square=sq;btn.setAttribute('aria-label',sq);if(selected===sq)btn.classList.add('selected');const legal=legalMoves.find(m=>m.to===sq);if(legal)btn.classList.add(legal.captured?'capture':'legal');if(lastMove&&(lastMove.from===sq||lastMove.to===sq))btn.classList.add('last');if(piece){const img=document.createElement('img');img.className='piece';img.alt=glyphs[piece.color+piece.type];img.src=pieceUrl(piece);img.onerror=()=>{const span=document.createElement('span');span.className='fallback';span.textContent=glyphs[piece.color+piece.type];img.replaceWith(span)};btn.appendChild(img)}btn.addEventListener('click',onSquare);boardEl.appendChild(btn)}cards.forEach(c=>{const id=c.dataset.card;c.classList.toggle('active',activeCard===id);c.classList.toggle('used',usedCards.has(id));c.disabled=usedCards.has(id)})}
+function setStatus(text){statusEl.textContent=text}
+function updateStatus(){if(game.in_checkmate()){setStatus(game.turn()==='w'?'Jaque mate. Gana la IA.':'Jaque mate. Has ganado.');return}if(game.in_draw()){setStatus('Partida en tablas.');return}if(aiThinking){setStatus('La IA está pensando…');return}if(doubleStage===1){setStatus('Doble Galope: mueve otro caballo.');return}setStatus(game.turn()==='w'?(game.in_check()?'Tu turno. Estás en jaque.':'Tu turno.'):'Turno de la IA.')}
+function clearSelection(){selected=null;legalMoves=[]}
+function onSquare(e){if(aiThinking||game.game_over()||game.turn()!=='w')return;const sq=e.currentTarget.dataset.square,piece=game.get(sq);if(!selected){if(!piece||piece.color!=='w')return;if((activeCard==='double'||doubleStage===1)&&piece.type!=='n'){toast('Doble Galope solo funciona con un caballo.');return}selected=sq;legalMoves=game.moves({square:sq,verbose:true});render();return}if(piece&&piece.color==='w'){if((activeCard==='double'||doubleStage===1)&&piece.type!=='n'){toast('Debes mover un caballo.');return}selected=sq;legalMoves=game.moves({square:sq,verbose:true});render();return}const candidate=legalMoves.find(m=>m.to===sq);if(!candidate){clearSelection();render();return}const move=game.move({from:selected,to:sq,promotion:'q'});if(!move){clearSelection();render();return}lastMove=move;clearSelection();if(move.captured)playReaction('aiLoses');if(activeCard==='double'&&doubleStage===0){usedCards.add('double');activeCard=null;doubleStage=1;forceTurn('w');render();updateStatus();return}if(doubleStage===1)doubleStage=0;if(activeCard==='pass'){usedCards.add('pass');blockAiBishop=true;activeCard=null}if(activeCard==='shield'){usedCards.add('shield');shieldFromCheck=true;activeCard=null}render();if(game.game_over()){updateStatus();return}aiThinking=true;updateStatus();setTimeout(aiMove,650)}
+function aiMove(){let moves=game.moves({verbose:true});if(blockAiBishop){const filtered=moves.filter(m=>m.piece!=='b');if(filtered.length)moves=filtered}if(shieldFromCheck){const filtered=moves.filter(m=>{game.move(m);const gives=game.in_check();game.undo();return !gives});if(filtered.length)moves=filtered}if(!moves.length){aiThinking=false;updateStatus();return}const scored=moves.map(m=>({m,score:scoreMove(m)+Math.random()*22})).sort((a,b)=>b.score-a.score),pool=scored.slice(0,Math.min(4,scored.length)),chosen=pool[Math.floor(Math.random()*pool.length)].m,move=game.move(chosen);lastMove=move;blockAiBishop=false;shieldFromCheck=false;aiThinking=false;if(move&&move.captured)playReaction('aiCaptures');render();updateStatus()}
+function scoreMove(m){let s=0;if(m.captured)s+=values[m.captured]*10-values[m.piece]*.35;if(m.promotion)s+=800;game.move(m);if(game.in_checkmate())s+=999999;else if(game.in_check())s+=80;s+=evaluateBlack();game.undo();const file=m.to.charCodeAt(0)-97,rank=Number(m.to[1])-1;s+=(3.5-Math.abs(file-3.5))*4+(3.5-Math.abs(rank-3.5))*4;return s}
+function evaluateBlack(){let total=0;for(const row of game.board())for(const p of row)if(p)total+=(p.color==='b'?1:-1)*values[p.type];return total}
+function playReaction(kind){const token=++reactionToken;aiVideo.pause();aiVideo.src=REACTIONS[kind];aiVideo.currentTime=0;aiIdle.style.visibility='hidden';aiVideo.style.display='block';aiVideo.muted=false;const p=aiVideo.play();if(p&&p.catch)p.catch(()=>{aiVideo.muted=true;aiVideo.play().catch(()=>finishReaction(token))});clearTimeout(aiVideo._fallback);aiVideo._fallback=setTimeout(()=>finishReaction(token),5200)}
+function finishReaction(token){if(token!==reactionToken)return;clearTimeout(aiVideo._fallback);aiVideo.pause();aiVideo.removeAttribute('src');aiVideo.load();aiVideo.style.display='none';aiIdle.style.visibility='visible'}
+aiVideo.addEventListener('ended',()=>finishReaction(reactionToken));aiVideo.addEventListener('error',()=>finishReaction(reactionToken));
+cards.forEach(c=>c.addEventListener('click',()=>{if(aiThinking||game.turn()!=='w'||game.game_over()||usedCards.has(c.dataset.card))return;activeCard=activeCard===c.dataset.card?null:c.dataset.card;render();if(activeCard==='double')toast('Tu próximo movimiento debe ser con un caballo.');if(activeCard==='pass')toast('La IA no podrá mover un alfil en su próximo turno.');if(activeCard==='shield')toast('La IA no podrá darte jaque en su próximo turno.')}));
+document.getElementById('restart').addEventListener('click',()=>{game.reset();selected=null;legalMoves=[];activeCard=null;usedCards.clear();aiThinking=false;lastMove=null;doubleStage=0;blockAiBishop=false;shieldFromCheck=false;finishReaction(++reactionToken);render();updateStatus()});
+render();updateStatus();
+</script>
+</body>
+</html>
