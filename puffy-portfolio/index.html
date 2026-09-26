@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alexandre García — Portfolio</title>
+<meta name="robots" content="index,follow">
+<style>html,body{margin:0;background:#070708;color:#eee;font-family:Arial,Helvetica,sans-serif}body{min-height:100vh;display:grid;place-items:center}</style>
+<script>
+(function(){
+  var phoneUA=/iPhone|iPod|Android.*Mobile|Windows Phone|webOS|BlackBerry|Opera Mini|IEMobile/i.test(navigator.userAgent);
+  var narrow=window.innerWidth<=720;
+  location.replace(phoneUA||narrow?"./mobile/":"./desktop/");
+})();
+</script>
+</head>
+<body>Loading portfolio…</body>
+</html>
